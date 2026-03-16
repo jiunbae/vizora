@@ -10,7 +10,7 @@ function getNextKey(): string {
   return key;
 }
 
-export function getGeminiModel(modelName = 'gemini-2.5-flash') {
+export function getGeminiModel(modelName = 'gemini-3.1-flash-lite-preview') {
   const genAI = new GoogleGenerativeAI(getNextKey());
   return genAI.getGenerativeModel({ model: modelName });
 }

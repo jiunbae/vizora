@@ -25,8 +25,36 @@ export function useGenerate(): UseGenerateReturn {
     setStatus('idle');
   }, []);
 
+  const processEvent = useCallback((event: StreamEvent) => {
+    switch (event.phase) {
+      case 'classifying':
+        setStatus('classifying');
+        if (event.classification) {
+          setClassification(event.classification);
+        }
+        break;
+      case 'generating':
+        setStatus('generating');
+        if (event.data) {
+          setCode(event.data);
+        }
+        break;
+      case 'validating':
+        setStatus('validating');
+        break;
+      case 'complete':
+        if (event.code) setCode(event.code);
+        if (event.classification) setClassification(event.classification);
+        setStatus('complete');
+        break;
+      case 'error':
+        setError(event.error || 'Unknown error');
+        setStatus('error');
+        break;
+    }
+  }, []);
+
   const generate = useCallback(async (prompt: string, diagramType?: DiagramType) => {
-    // Cancel any existing request
     abortControllerRef.current?.abort();
     const controller = new AbortController();
     abortControllerRef.current = controller;
@@ -37,6 +65,7 @@ export function useGenerate(): UseGenerateReturn {
     setStatus('classifying');
 
     try {
+      console.log('[useGenerate] Starting fetch to /api/generate');
       const response = await fetch('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -44,12 +73,15 @@ export function useGenerate(): UseGenerateReturn {
         signal: controller.signal,
       });
 
+      console.log('[useGenerate] Response received:', response.status);
+
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
       const reader = response.body?.getReader();
       if (!reader) throw new Error('No response body');
+      console.log('[useGenerate] Reader obtained, starting stream');
 
       const decoder = new TextDecoder();
       let buffer = '';
@@ -59,54 +91,55 @@ export function useGenerate(): UseGenerateReturn {
         if (done) break;
 
         buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || '';
 
-        for (const line of lines) {
-          if (!line.startsWith('data: ')) continue;
+        // Process all complete SSE messages in buffer
+        // SSE messages end with \n\n
+        let doubleNewline = buffer.indexOf('\n\n');
+        while (doubleNewline !== -1) {
+          const message = buffer.slice(0, doubleNewline);
+          buffer = buffer.slice(doubleNewline + 2);
 
-          try {
-            const event: StreamEvent = JSON.parse(line.slice(6));
-
-            switch (event.phase) {
-              case 'classifying':
-                setStatus('classifying');
-                if (event.classification) {
-                  setClassification(event.classification);
-                }
-                break;
-              case 'generating':
-                setStatus('generating');
-                if (event.data) {
-                  setCode(event.data);
-                }
-                break;
-              case 'validating':
-                setStatus('validating');
-                break;
-              case 'complete':
-                if (event.code) setCode(event.code);
-                if (event.classification) setClassification(event.classification);
-                setStatus('complete');
-                break;
-              case 'error':
-                setError(event.error || 'Unknown error');
-                setStatus('error');
-                break;
+          // Parse each line of the message
+          for (const line of message.split('\n')) {
+            const trimmed = line.trim();
+            if (trimmed.startsWith('data: ')) {
+              try {
+                const event: StreamEvent = JSON.parse(trimmed.slice(6));
+                console.log('[useGenerate] Event:', event.phase);
+                processEvent(event);
+              } catch (e) {
+                console.warn('[useGenerate] Malformed SSE:', trimmed, e);
+              }
             }
-          } catch {
-            // Skip malformed events
+          }
+
+          doubleNewline = buffer.indexOf('\n\n');
+        }
+      }
+
+      // Process any remaining data in buffer
+      if (buffer.trim()) {
+        for (const line of buffer.split('\n')) {
+          const trimmed = line.trim();
+          if (trimmed.startsWith('data: ')) {
+            try {
+              const event: StreamEvent = JSON.parse(trimmed.slice(6));
+              processEvent(event);
+            } catch {
+              // skip
+            }
           }
         }
       }
     } catch (err) {
+      console.error('[useGenerate] Error:', err);
       if (err instanceof DOMException && err.name === 'AbortError') {
-        return; // User cancelled
+        return;
       }
       setError(err instanceof Error ? err.message : 'Generation failed');
       setStatus('error');
     }
-  }, []);
+  }, [processEvent]);
 
   return { code, status, classification, error, generate, cancel };
 }

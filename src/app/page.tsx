@@ -46,7 +46,10 @@ export default function Home() {
 
   const handleGenerate = () => {
     if (!prompt.trim()) return;
-    generate(prompt, selectedType || undefined);
+    console.log('[page] handleGenerate called, prompt:', prompt.slice(0, 50));
+    generate(prompt, selectedType || undefined).catch((err) => {
+      console.error('[page] generate error:', err);
+    });
   };
 
   const handleTemplateClick = (type: DiagramType) => {

@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  /* Cross-origin dev access handled by default in Next.js 16 */
 };
 
 export default nextConfig;

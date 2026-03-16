@@ -16,77 +16,81 @@ export async function POST(req: NextRequest) {
 
   const encoder = new TextEncoder();
 
-  const stream = new ReadableStream({
-    async start(controller) {
-      const send = (event: StreamEvent) => {
-        controller.enqueue(
-          encoder.encode(`data: ${JSON.stringify(event)}\n\n`)
-        );
-      };
+  // Use TransformStream to ensure chunks flush immediately
+  const { readable, writable } = new TransformStream();
+  const writer = writable.getWriter();
 
-      try {
-        // Phase 1: Classification
-        send({ phase: 'classifying' });
+  const send = async (event: StreamEvent) => {
+    await writer.write(
+      encoder.encode(`data: ${JSON.stringify(event)}\n\n`)
+    );
+  };
 
-        let classification: ClassificationResult;
-        if (forcedType) {
-          classification = {
-            type: forcedType as DiagramType,
-            confidence: 1.0,
-            needsClarification: false,
-            clarificationQuestions: [],
-            reasoning: 'User selected diagram type directly',
-          };
-        } else {
-          classification = await classifyDiagram(prompt);
-        }
+  // Start async work AFTER returning the response
+  (async () => {
+    try {
+      // Phase 1: Classification
+      await send({ phase: 'classifying' });
 
-        send({ phase: 'classifying', classification });
-
-        const engine = DIAGRAM_TYPE_TO_ENGINE[classification.type];
-
-        // Phase 2: Generation (streaming)
-        send({ phase: 'generating' });
-
-        let finalCode = '';
-
-        if (engine === 'mermaid') {
-          for await (const partialCode of generateDiagramCode(prompt, classification.type)) {
-            finalCode = partialCode;
-            send({ phase: 'generating', data: partialCode });
-          }
-        } else {
-          finalCode = `graph TD\n  A["${classification.type} diagram"] --> B["Coming soon"]`;
-          send({ phase: 'generating', data: finalCode });
-        }
-
-        // Phase 3: Validation
-        send({ phase: 'validating' });
-        const validation = await validateMermaidCode(finalCode);
-
-        if (!validation.valid) {
-          // Try to use cleaned code
-          finalCode = validation.code || finalCode;
-        }
-
-        // Phase 4: Complete
-        send({ phase: 'complete', code: finalCode, classification });
-      } catch (error) {
-        send({
-          phase: 'error',
-          error: error instanceof Error ? error.message : 'Generation failed',
-        });
-      } finally {
-        controller.close();
+      let classification: ClassificationResult;
+      if (forcedType) {
+        classification = {
+          type: forcedType as DiagramType,
+          confidence: 1.0,
+          needsClarification: false,
+          clarificationQuestions: [],
+          reasoning: 'User selected diagram type directly',
+        };
+      } else {
+        classification = await classifyDiagram(prompt);
       }
-    },
-  });
 
-  return new Response(stream, {
+      await send({ phase: 'classifying', classification });
+
+      const engine = DIAGRAM_TYPE_TO_ENGINE[classification.type];
+
+      // Phase 2: Generation (streaming)
+      await send({ phase: 'generating' });
+
+      let finalCode = '';
+
+      if (engine === 'mermaid') {
+        for await (const partialCode of generateDiagramCode(prompt, classification.type)) {
+          finalCode = partialCode;
+          await send({ phase: 'generating', data: partialCode });
+        }
+      } else {
+        finalCode = `graph TD\n  A["${classification.type} diagram"] --> B["Coming soon"]`;
+        await send({ phase: 'generating', data: finalCode });
+      }
+
+      // Phase 3: Validation
+      await send({ phase: 'validating' });
+      const validation = await validateMermaidCode(finalCode);
+
+      if (!validation.valid) {
+        finalCode = validation.code || finalCode;
+      }
+
+      // Phase 4: Complete
+      await send({ phase: 'complete', code: finalCode, classification });
+    } catch (error) {
+      await send({
+        phase: 'error',
+        error: error instanceof Error ? error.message : 'Generation failed',
+      });
+    } finally {
+      await writer.close();
+    }
+  })();
+
+  // Return response immediately so SSE chunks flow incrementally
+  return new Response(readable, {
     headers: {
       'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache',
+      'Cache-Control': 'no-cache, no-transform',
       'Connection': 'keep-alive',
+      'X-Accel-Buffering': 'no',
     },
   });
 }
