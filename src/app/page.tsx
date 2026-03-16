@@ -20,6 +20,39 @@ const PHASE_LABELS: Record<string, { label: string; icon: typeof Search }> = {
   error: { label: 'Error occurred', icon: AlertCircle },
 };
 
+const SAMPLE_PROMPTS = [
+  {
+    title: 'RC Low-Pass Filter Circuit',
+    category: 'Circuit',
+    prompt: 'Draw a detailed circuit diagram of an RC low-pass filter with input voltage source, resistor R1, capacitor C1, and output voltage. Include component values and signal flow direction.',
+  },
+  {
+    title: 'DNA Replication Process',
+    category: 'Biology',
+    prompt: 'Create a flowchart showing the process of DNA replication including helicase unwinding, primase adding RNA primers, DNA polymerase III extending, and ligase joining Okazaki fragments.',
+  },
+  {
+    title: 'REST API Request Lifecycle',
+    category: 'Software',
+    prompt: 'Draw a sequence diagram for a REST API request lifecycle: client sends HTTP request, load balancer routes it, API gateway authenticates, microservice processes, database query, and response back.',
+  },
+  {
+    title: 'University Database Schema',
+    category: 'Database',
+    prompt: 'Create an ER diagram for a university database with Students, Courses, Professors, Departments, and Enrollments. Include all relationships and key attributes.',
+  },
+  {
+    title: 'TCP Connection Lifecycle',
+    category: 'Network',
+    prompt: 'Draw a state diagram for a TCP connection lifecycle showing CLOSED, LISTEN, SYN_SENT, SYN_RECEIVED, ESTABLISHED, FIN_WAIT_1, FIN_WAIT_2, CLOSE_WAIT, LAST_ACK, TIME_WAIT states.',
+  },
+  {
+    title: 'ML Training Pipeline',
+    category: 'AI/ML',
+    prompt: 'Create a flowchart of the machine learning pipeline: data collection, EDA, preprocessing, feature engineering, model selection, training with cross-validation, hyperparameter tuning, evaluation, and deployment.',
+  },
+];
+
 const TEMPLATE_GROUPS = {
   software: {
     label: 'Software',
@@ -54,6 +87,13 @@ export default function Home() {
 
   const handleTemplateClick = (type: DiagramType) => {
     setSelectedType((prev) => (prev === type ? null : type));
+  };
+
+  const handleSampleClick = (samplePrompt: string) => {
+    setPrompt(samplePrompt);
+    generate(samplePrompt).catch((err) => {
+      console.error('[page] sample generate error:', err);
+    });
   };
 
   return (
@@ -192,19 +232,40 @@ export default function Home() {
                 className="w-full"
               />
             ) : (
-              <CardContent className="flex flex-1 flex-col items-center justify-center gap-3 p-8 text-center">
+              <CardContent className="flex flex-1 flex-col items-center justify-center gap-4 p-6">
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
                   <Sparkles className="h-6 w-6 text-muted-foreground" />
                 </div>
-                <p className="text-sm text-muted-foreground">
-                  Enter a prompt to generate a diagram
-                </p>
-                <p className="text-xs text-muted-foreground/60">
-                  Supports flowcharts, sequence diagrams, ER diagrams, math graphs, and more
-                </p>
+                <div className="text-center">
+                  <p className="text-sm text-muted-foreground">
+                    Enter a prompt or try a sample below
+                  </p>
+                </div>
                 {error && (
-                  <p className="mt-2 text-sm text-red-400">{error}</p>
+                  <p className="text-sm text-red-400">{error}</p>
                 )}
+                {/* Sample Prompts Grid */}
+                <div className="grid w-full max-w-2xl grid-cols-1 gap-2 sm:grid-cols-2">
+                  {SAMPLE_PROMPTS.map((sample) => (
+                    <button
+                      key={sample.title}
+                      onClick={() => handleSampleClick(sample.prompt)}
+                      className="group flex flex-col gap-1 rounded-lg border border-border/50 bg-muted/30 p-3 text-left transition-all hover:border-primary/50 hover:bg-muted/60"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                          {sample.category}
+                        </Badge>
+                        <span className="text-xs font-medium text-foreground group-hover:text-primary transition-colors">
+                          {sample.title}
+                        </span>
+                      </div>
+                      <p className="text-[11px] leading-relaxed text-muted-foreground line-clamp-2">
+                        {sample.prompt}
+                      </p>
+                    </button>
+                  ))}
+                </div>
               </CardContent>
             )}
           </Card>
