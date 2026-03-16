@@ -20,11 +20,11 @@ export const DIAGRAM_TYPE_TO_ENGINE: Record<DiagramType, RenderEngine> = {
   er: 'mermaid',
   state: 'mermaid',
   math_graph: 'd3',
-  network: 'd3',
+  network: 'mermaid',
   chemical: 'svg',
   circuit: 'svg',
-  anatomy: 'image',
-  illustration: 'image',
+  anatomy: 'svg',
+  illustration: 'svg',
 };
 
 export interface ClassificationResult {
@@ -61,6 +61,7 @@ export interface StreamEvent {
   classification?: ClassificationResult;
   code?: string;
   error?: string;
+  engine?: RenderEngine;
 }
 
 export const DIAGRAM_LABELS: Record<DiagramType, { label: string; description: string; icon: string }> = {

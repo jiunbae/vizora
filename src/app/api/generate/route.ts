@@ -54,26 +54,23 @@ export async function POST(req: NextRequest) {
 
       let finalCode = '';
 
-      if (engine === 'mermaid') {
-        for await (const partialCode of generateDiagramCode(prompt, classification.type)) {
-          finalCode = partialCode;
-          await send({ phase: 'generating', data: partialCode });
-        }
-      } else {
-        finalCode = `graph TD\n  A["${classification.type} diagram"] --> B["Coming soon"]`;
-        await send({ phase: 'generating', data: finalCode });
+      for await (const partialCode of generateDiagramCode(prompt, classification.type)) {
+        finalCode = partialCode;
+        await send({ phase: 'generating', data: partialCode });
       }
 
-      // Phase 3: Validation
-      await send({ phase: 'validating' });
-      const validation = await validateMermaidCode(finalCode);
+      // Phase 3: Validation (only for mermaid)
+      if (engine === 'mermaid') {
+        await send({ phase: 'validating' });
+        const validation = await validateMermaidCode(finalCode);
 
-      if (!validation.valid) {
-        finalCode = validation.code || finalCode;
+        if (!validation.valid) {
+          finalCode = validation.code || finalCode;
+        }
       }
 
       // Phase 4: Complete
-      await send({ phase: 'complete', code: finalCode, classification });
+      await send({ phase: 'complete', code: finalCode, classification, engine });
     } catch (error) {
       await send({
         phase: 'error',

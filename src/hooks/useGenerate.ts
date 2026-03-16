@@ -1,12 +1,13 @@
 'use client';
 
 import { useState, useCallback, useRef } from 'react';
-import { DiagramType, ClassificationResult, StreamEvent } from '@/types/diagram';
+import { DiagramType, RenderEngine, ClassificationResult, StreamEvent } from '@/types/diagram';
 
 interface UseGenerateReturn {
   code: string;
   status: 'idle' | 'classifying' | 'generating' | 'validating' | 'complete' | 'error';
   classification: ClassificationResult | null;
+  engine: RenderEngine;
   error: string | null;
   generate: (prompt: string, diagramType?: DiagramType) => Promise<void>;
   cancel: () => void;
@@ -16,6 +17,7 @@ export function useGenerate(): UseGenerateReturn {
   const [code, setCode] = useState('');
   const [status, setStatus] = useState<UseGenerateReturn['status']>('idle');
   const [classification, setClassification] = useState<ClassificationResult | null>(null);
+  const [engine, setEngine] = useState<RenderEngine>('mermaid');
   const [error, setError] = useState<string | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -45,6 +47,7 @@ export function useGenerate(): UseGenerateReturn {
       case 'complete':
         if (event.code) setCode(event.code);
         if (event.classification) setClassification(event.classification);
+        if (event.engine) setEngine(event.engine);
         setStatus('complete');
         break;
       case 'error':
@@ -141,5 +144,5 @@ export function useGenerate(): UseGenerateReturn {
     }
   }, [processEvent]);
 
-  return { code, status, classification, error, generate, cancel };
+  return { code, status, classification, engine, error, generate, cancel };
 }

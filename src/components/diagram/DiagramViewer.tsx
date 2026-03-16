@@ -2,20 +2,47 @@
 
 import { useState, useRef } from 'react';
 import { MermaidRenderer } from './MermaidRenderer';
+import { SvgRenderer } from './SvgRenderer';
+import { PlotlyRenderer } from './PlotlyRenderer';
 import { Button } from '@/components/ui/button';
 
 interface DiagramViewerProps {
   code: string;
+  renderEngine?: 'mermaid' | 'svg' | 'plotly' | 'd3' | 'image';
   isStreaming?: boolean;
   className?: string;
 }
 
-export function DiagramViewer({ code, isStreaming = false, className = '' }: DiagramViewerProps) {
+export function DiagramViewer({ code, renderEngine = 'mermaid', isStreaming = false, className = '' }: DiagramViewerProps) {
   const [showCode, setShowCode] = useState(false);
   const [zoom, setZoom] = useState(1);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const handleDownloadSvg = () => {
+    if (renderEngine === 'svg') {
+      // For SVG engine, download the raw SVG code directly
+      let svgCode = code
+        .replace(/^```svg\n?/i, '')
+        .replace(/^```xml\n?/i, '')
+        .replace(/^```\n?/, '')
+        .replace(/\n?```$/, '')
+        .trim();
+      const blob = new Blob([svgCode], { type: 'image/svg+xml' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'diagram.svg';
+      a.click();
+      URL.revokeObjectURL(url);
+      return;
+    }
+
+    if (renderEngine === 'plotly') {
+      // For Plotly, use the built-in export via the mode bar
+      // Users can use the camera icon in Plotly's toolbar
+      return;
+    }
+
     const svgEl = containerRef.current?.querySelector('svg');
     if (!svgEl) return;
 
@@ -122,10 +149,13 @@ export function DiagramViewer({ code, isStreaming = false, className = '' }: Dia
           </pre>
         ) : (
           <div style={{ transform: `scale(${zoom})`, transformOrigin: 'top left' }}>
-            <MermaidRenderer
-              code={code}
-              className="min-h-[200px]"
-            />
+            {renderEngine === 'plotly' || renderEngine === 'd3' ? (
+              <PlotlyRenderer code={code} className="min-h-[400px]" />
+            ) : renderEngine === 'svg' || renderEngine === 'image' ? (
+              <SvgRenderer code={code} className="min-h-[200px]" />
+            ) : (
+              <MermaidRenderer code={code} className="min-h-[200px]" />
+            )}
             {isStreaming && (
               <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
                 <div className="animate-pulse h-2 w-2 rounded-full bg-blue-500" />

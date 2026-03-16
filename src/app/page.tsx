@@ -51,6 +51,21 @@ const SAMPLE_PROMPTS = [
     category: 'AI/ML',
     prompt: 'Create a flowchart of the machine learning pipeline: data collection, EDA, preprocessing, feature engineering, model selection, training with cross-validation, hyperparameter tuning, evaluation, and deployment.',
   },
+  {
+    title: 'Benzene Ring Structure',
+    category: 'Chemistry',
+    prompt: 'Draw the chemical structure of aspirin (acetylsalicylic acid) showing the benzene ring, ester group, and carboxylic acid group with proper bond angles and atom labels.',
+  },
+  {
+    title: 'Neural Network Loss Curves',
+    category: 'Graph',
+    prompt: 'Create a line chart comparing training loss and validation loss curves over 100 epochs for a neural network, showing the point where overfitting begins around epoch 60.',
+  },
+  {
+    title: 'Op-Amp Inverting Amplifier',
+    category: 'Circuit',
+    prompt: 'Draw an inverting operational amplifier circuit with input resistor Ri=10kΩ, feedback resistor Rf=100kΩ, showing input voltage Vin, output voltage Vout, and power supply connections +Vcc/-Vcc.',
+  },
 ];
 
 const TEMPLATE_GROUPS = {
@@ -72,7 +87,7 @@ export default function Home() {
   const { theme, setTheme } = useTheme();
   const [prompt, setPrompt] = useState('');
   const [selectedType, setSelectedType] = useState<DiagramType | null>(null);
-  const { code, status, error, generate, cancel } = useGenerate();
+  const { code, status, engine, error, generate, cancel } = useGenerate();
 
   const isGenerating = status === 'classifying' || status === 'generating' || status === 'validating';
   const phase = status === 'idle' ? null : status;
@@ -229,6 +244,7 @@ export default function Home() {
               <DiagramViewer
                 code={code}
                 isStreaming={status === 'generating'}
+                renderEngine={engine}
                 className="w-full"
               />
             ) : (

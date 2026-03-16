@@ -1,5 +1,5 @@
 import { DiagramType, DIAGRAM_TYPE_TO_ENGINE } from '@/types/diagram';
-import { getMermaidGeneratorPrompt } from './prompts/system';
+import { getMermaidGeneratorPrompt, getSvgGeneratorPrompt, getPlotlyGeneratorPrompt } from './prompts/system';
 import { getGeminiModel } from './gemini';
 
 export async function* generateDiagramCode(
@@ -8,12 +8,25 @@ export async function* generateDiagramCode(
 ): AsyncGenerator<string, void, unknown> {
   const engine = DIAGRAM_TYPE_TO_ENGINE[diagramType];
 
-  if (engine !== 'mermaid') {
-    yield `graph TD\n  A[${diagramType} support coming soon] --> B[Use flowchart for now]`;
-    return;
+  let systemPrompt: string;
+
+  switch (engine) {
+    case 'mermaid':
+      systemPrompt = getMermaidGeneratorPrompt(diagramType);
+      break;
+    case 'svg':
+      systemPrompt = getSvgGeneratorPrompt(diagramType);
+      break;
+    case 'd3':
+      systemPrompt = getPlotlyGeneratorPrompt();
+      break;
+    case 'image':
+      systemPrompt = getSvgGeneratorPrompt(diagramType);
+      break;
+    default:
+      systemPrompt = getMermaidGeneratorPrompt(diagramType);
   }
 
-  const systemPrompt = getMermaidGeneratorPrompt(diagramType);
   const model = getGeminiModel();
 
   const result = await model.generateContentStream({

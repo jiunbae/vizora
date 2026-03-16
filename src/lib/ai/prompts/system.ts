@@ -111,6 +111,124 @@ function getMermaidTypeGuide(type: string): string {
   return guides[type] || `Generate a detailed, publication-quality Mermaid diagram for this ${type} type. Use proper styling with classDef, meaningful labels, and clear structure.`;
 }
 
+export function getSvgGeneratorPrompt(diagramType: string): string {
+  return `You are an expert scientific SVG illustration generator. Create PUBLICATION-QUALITY SVG code for ${diagramType} diagrams that can be directly inserted into academic papers.
+
+OUTPUT REQUIREMENTS:
+1. Output ONLY valid SVG code - start with <svg and end with </svg>
+2. No markdown fences, no explanations, ONLY the SVG
+3. Use viewBox for proper scaling (e.g., viewBox="0 0 800 600")
+4. Set width="100%" to be responsive
+5. Use clean, professional styling suitable for academic publications
+
+DESIGN GUIDELINES:
+- Use a clean white/transparent background
+- Professional color palette: primary #1565C0, secondary #E65100, accent #2E7D32, neutral #455A64
+- Clean lines with consistent stroke widths (1.5-2px)
+- Sans-serif fonts: font-family="Inter, Helvetica Neue, Arial, sans-serif"
+- Font sizes: titles 16-18px, labels 12-14px, annotations 10-12px
+- Use <defs> for reusable components (arrowheads, symbols)
+- Add proper spacing and padding
+- Include clear labels and annotations
+- Use <g> groups for logical organization
+
+${getSvgTypeGuide(diagramType)}
+
+Create a detailed, accurate, publication-quality SVG. Output ONLY the SVG code.`;
+}
+
+function getSvgTypeGuide(type: string): string {
+  const guides: Record<string, string> = {
+    circuit: `CIRCUIT DIAGRAM CONVENTIONS:
+- Use standard IEEE circuit symbols
+- Resistor: zigzag line or rectangle
+- Capacitor: two parallel lines (one curved for electrolytic)
+- Inductor: coil/loops
+- Voltage source: circle with + and -
+- Ground: standard ground symbol (3 horizontal lines decreasing)
+- Current flow: arrows along wires
+- Component values: labeled next to each component (e.g., R1 = 10kΩ)
+- Nodes: small filled circles at junctions
+- Wires: clean horizontal/vertical lines, right angles only
+- Signal flow: left to right or top to bottom`,
+    chemical: `CHEMICAL STRUCTURE CONVENTIONS:
+- Use standard chemical drawing conventions
+- Bond angles: 120° for sp2, 109.5° for sp3
+- Bond types: single (-), double (=), triple (≡), dashed (wedge)
+- Atom labels: standard element symbols, colored by type
+  - Carbon: #333, Oxygen: #E53935, Nitrogen: #1565C0, Sulfur: #FDD835
+- Ring structures: regular hexagons for benzene, etc.
+- Functional groups: clearly labeled
+- Hydrogen atoms: shown on heteroatoms, implicit on carbon
+- Stereochemistry: wedge (bold) and dash (dashed) bonds where relevant
+- Reaction arrows: standard arrow types (→, ⇌, ↔)`,
+    anatomy: `ANATOMY ILLUSTRATION CONVENTIONS:
+- Use anatomically accurate proportions
+- Clean, labeled diagram style (not photorealistic)
+- Leader lines from labels to structures
+- Color coding: arteries #E53935, veins #1565C0, nerves #FDD835, muscles #E57373, bones #ECEFF1
+- Layered presentation: superficial to deep
+- Cross-section views where appropriate
+- Scale bar if relevant`,
+    illustration: `SCIENTIFIC ILLUSTRATION CONVENTIONS:
+- Clean, technical drawing style
+- Consistent line weights
+- Professional labeling with leader lines
+- Color used meaningfully (not decoratively)
+- Legend if multiple colors/patterns used
+- Proper proportions and scale`,
+  };
+  return guides[type] || 'Create a clean, professional scientific illustration.';
+}
+
+export function getPlotlyGeneratorPrompt(): string {
+  return `You are an expert data visualization generator. Create PUBLICATION-QUALITY chart specifications in Plotly JSON format.
+
+OUTPUT REQUIREMENTS:
+1. Output ONLY valid JSON - no markdown fences, no explanations
+2. The JSON must have "data" (array of traces) and "layout" (object) properties
+3. Generate realistic, meaningful sample data that demonstrates the concept
+
+JSON STRUCTURE:
+{
+  "data": [
+    {
+      "type": "scatter",  // or "bar", "heatmap", "contour", "scatter3d", etc.
+      "x": [...],
+      "y": [...],
+      "name": "Trace name",
+      "mode": "lines+markers",  // for scatter
+      "line": { "color": "#1565C0", "width": 2 },
+      "marker": { "size": 6 }
+    }
+  ],
+  "layout": {
+    "title": { "text": "Chart Title", "font": { "size": 16 } },
+    "xaxis": { "title": { "text": "X Axis Label" } },
+    "yaxis": { "title": { "text": "Y Axis Label" } },
+    "showlegend": true,
+    "legend": { "x": 0.02, "y": 0.98 }
+  }
+}
+
+DESIGN GUIDELINES:
+- Professional academic color palette: #1565C0, #E65100, #2E7D32, #6A1B9A, #C62828
+- Clean grid lines, minimal chartjunk
+- Descriptive axis labels with units
+- Title that describes the finding/relationship
+- Legend positioned to not overlap data
+- Use appropriate chart types:
+  - Line/scatter: trends, functions, time series
+  - Bar: comparisons, distributions
+  - Heatmap: correlation matrices, 2D distributions
+  - Contour: level curves, field plots
+  - 3D scatter/surface: multivariable relationships
+- Include error bars where statistically appropriate
+- Use LaTeX notation in labels where needed (wrap in $...$)
+
+Output ONLY the JSON, nothing else.`;
+}
+
 export const VALIDATOR_PROMPT = `The following Mermaid code has a syntax error.
 
 Code:
