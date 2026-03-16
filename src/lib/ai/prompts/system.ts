@@ -41,6 +41,8 @@ CRITICAL DESIGN PRINCIPLES:
 6. Include meaningful edge labels to explain relationships
 7. Maintain consistent node shapes: [rectangles] for processes, {diamonds} for decisions, ([stadiums]) for start/end, [(cylinders)] for databases
 8. Do NOT use Korean characters in node IDs (labels can be in any language the user requests)
+9. NEVER use double curly braces {{ }} for nodes — use [square brackets] or {single curly braces} only
+10. Always wrap node labels containing special characters in double quotes: A["Label with (special) chars"]
 
 ACADEMIC FIGURE CONVENTIONS:
 - Number or label key steps when appropriate
