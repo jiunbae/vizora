@@ -1,8 +1,6 @@
-import Anthropic from '@anthropic-ai/sdk';
 import { DiagramType, DIAGRAM_TYPE_TO_ENGINE } from '@/types/diagram';
 import { getMermaidGeneratorPrompt } from './prompts/system';
-
-const anthropic = new Anthropic();
+import { getGeminiModel } from './gemini';
 
 export async function* generateDiagramCode(
   prompt: string,
@@ -11,25 +9,24 @@ export async function* generateDiagramCode(
   const engine = DIAGRAM_TYPE_TO_ENGINE[diagramType];
 
   if (engine !== 'mermaid') {
-    // For non-mermaid types, generate a simple placeholder for now
     yield `graph TD\n  A[${diagramType} support coming soon] --> B[Use flowchart for now]`;
     return;
   }
 
   const systemPrompt = getMermaidGeneratorPrompt(diagramType);
+  const model = getGeminiModel();
 
-  const stream = anthropic.messages.stream({
-    model: 'claude-sonnet-4-20250514',
-    max_tokens: 4096,
-    system: systemPrompt,
-    messages: [{ role: 'user', content: prompt }],
+  const result = await model.generateContentStream({
+    contents: [{ role: 'user', parts: [{ text: prompt }] }],
+    systemInstruction: { role: 'user', parts: [{ text: systemPrompt }] },
   });
 
   let buffer = '';
 
-  for await (const event of stream) {
-    if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
-      buffer += event.delta.text;
+  for await (const chunk of result.stream) {
+    const text = chunk.text();
+    if (text) {
+      buffer += text;
       yield buffer;
     }
   }

@@ -1,7 +1,5 @@
-import Anthropic from '@anthropic-ai/sdk';
 import { VALIDATOR_PROMPT } from './prompts/system';
-
-const anthropic = new Anthropic();
+import { getGeminiModel } from './gemini';
 
 export interface ValidationResult {
   valid: boolean;
@@ -10,10 +8,8 @@ export interface ValidationResult {
 }
 
 export async function validateMermaidCode(code: string): Promise<ValidationResult> {
-  // Basic syntax checks before sending to AI for correction
   const trimmed = code.trim();
 
-  // Remove markdown fences if present
   const cleaned = trimmed
     .replace(/^```mermaid\n?/i, '')
     .replace(/^```\n?/, '')
@@ -24,7 +20,6 @@ export async function validateMermaidCode(code: string): Promise<ValidationResul
     return { valid: false, code: cleaned, error: 'Empty code' };
   }
 
-  // Check for basic Mermaid diagram type declarations
   const validStarters = [
     'graph', 'flowchart', 'sequenceDiagram', 'classDiagram',
     'erDiagram', 'stateDiagram', 'gantt', 'pie', 'gitgraph',
@@ -47,15 +42,10 @@ export async function fixMermaidCode(code: string, error: string): Promise<strin
     .replace('{code}', code)
     .replace('{error}', error);
 
-  const response = await anthropic.messages.create({
-    model: 'claude-sonnet-4-20250514',
-    max_tokens: 4096,
-    messages: [{ role: 'user', content: prompt }],
-  });
+  const model = getGeminiModel();
+  const result = await model.generateContent(prompt);
+  const text = result.response.text();
 
-  const text = response.content[0].type === 'text' ? response.content[0].text : code;
-
-  // Clean up any markdown fences
   return text
     .replace(/^```mermaid\n?/i, '')
     .replace(/^```\n?/, '')
