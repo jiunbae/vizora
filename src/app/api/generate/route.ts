@@ -1,0 +1,92 @@
+import { NextRequest } from 'next/server';
+import { classifyDiagram } from '@/lib/ai/classifier';
+import { generateDiagramCode } from '@/lib/ai/generator';
+import { validateMermaidCode } from '@/lib/ai/validator';
+import { DiagramType, StreamEvent, DIAGRAM_TYPE_TO_ENGINE, ClassificationResult } from '@/types/diagram';
+
+export const runtime = 'nodejs';
+export const maxDuration = 60;
+
+export async function POST(req: NextRequest) {
+  const { prompt, diagramType: forcedType } = await req.json();
+
+  if (!prompt || typeof prompt !== 'string') {
+    return Response.json({ error: 'Prompt is required' }, { status: 400 });
+  }
+
+  const encoder = new TextEncoder();
+
+  const stream = new ReadableStream({
+    async start(controller) {
+      const send = (event: StreamEvent) => {
+        controller.enqueue(
+          encoder.encode(`data: ${JSON.stringify(event)}\n\n`)
+        );
+      };
+
+      try {
+        // Phase 1: Classification
+        send({ phase: 'classifying' });
+
+        let classification: ClassificationResult;
+        if (forcedType) {
+          classification = {
+            type: forcedType as DiagramType,
+            confidence: 1.0,
+            needsClarification: false,
+            clarificationQuestions: [],
+            reasoning: 'User selected diagram type directly',
+          };
+        } else {
+          classification = await classifyDiagram(prompt);
+        }
+
+        send({ phase: 'classifying', classification });
+
+        const engine = DIAGRAM_TYPE_TO_ENGINE[classification.type];
+
+        // Phase 2: Generation (streaming)
+        send({ phase: 'generating' });
+
+        let finalCode = '';
+
+        if (engine === 'mermaid') {
+          for await (const partialCode of generateDiagramCode(prompt, classification.type)) {
+            finalCode = partialCode;
+            send({ phase: 'generating', data: partialCode });
+          }
+        } else {
+          finalCode = `graph TD\n  A["${classification.type} diagram"] --> B["Coming soon"]`;
+          send({ phase: 'generating', data: finalCode });
+        }
+
+        // Phase 3: Validation
+        send({ phase: 'validating' });
+        const validation = await validateMermaidCode(finalCode);
+
+        if (!validation.valid) {
+          // Try to use cleaned code
+          finalCode = validation.code || finalCode;
+        }
+
+        // Phase 4: Complete
+        send({ phase: 'complete', code: finalCode, classification });
+      } catch (error) {
+        send({
+          phase: 'error',
+          error: error instanceof Error ? error.message : 'Generation failed',
+        });
+      } finally {
+        controller.close();
+      }
+    },
+  });
+
+  return new Response(stream, {
+    headers: {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+    },
+  });
+}
