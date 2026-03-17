@@ -117,7 +117,7 @@ export default function Home() {
       <header className="flex items-center justify-between border-b border-border px-6 py-3">
         <div className="flex items-center gap-2">
           <Sparkles className="h-5 w-5 text-primary" />
-          <h1 className="text-lg font-semibold tracking-tight">STEM Visualizer</h1>
+          <h1 className="text-lg font-semibold tracking-tight">Vizora</h1>
         </div>
         <Button
           variant="ghost"

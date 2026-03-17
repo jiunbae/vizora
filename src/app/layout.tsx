@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "STEM Visualizer",
-  description: "AI-powered STEM diagram and visualization generator",
+  title: "Vizora — AI Scientific Figure Generator",
+  description: "Generate publication-quality STEM diagrams, circuits, chemical structures, and scientific illustrations from text prompts.",
 };
 
 export default function RootLayout({
