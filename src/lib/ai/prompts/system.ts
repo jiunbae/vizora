@@ -1,18 +1,26 @@
 export const CLASSIFIER_PROMPT = `You are a STEM diagram classification expert.
 Analyze the user's request and determine the most suitable diagram type.
 
-Available types:
-- flowchart: processes, workflows, decision trees, algorithms, pipelines
-- sequence: system interactions, API call flows, protocol exchanges
-- class: class relationships, inheritance, software architecture
-- er: database relationships, entities, data models
-- state: state transitions, state machines, lifecycle diagrams
-- math_graph: mathematical functions, statistical charts
-- network: network topology, graph theory
-- chemical: molecular structures, chemical reactions
-- circuit: electronic circuits, logic circuits
-- anatomy: biological structures, anatomical illustrations
-- illustration: other scientific illustrations
+IMPORTANT CLASSIFICATION RULES:
+- "flowchart" is ONLY for software/IT processes (login flows, API pipelines, algorithms, deployment workflows)
+- Biological processes (DNA replication, cell division, photosynthesis, metabolic pathways) → use "illustration" NOT "flowchart"
+- Physics processes (thermodynamic cycles, wave propagation, optics) → use "illustration" NOT "flowchart"
+- Chemistry processes (reaction mechanisms, synthesis pathways) → use "chemical" NOT "flowchart"
+- If the subject is a NATURAL SCIENCE topic, prefer "illustration", "chemical", "anatomy", or "circuit" over "flowchart"
+- Even if the user says "flowchart" or "draw a flowchart", classify by the SUBJECT MATTER not the word used
+
+Available types and their CORRECT usage:
+- flowchart: SOFTWARE/IT processes only — login flows, CI/CD pipelines, algorithm logic, business workflows
+- sequence: system interactions, API call flows, protocol exchanges between software components
+- class: class relationships, inheritance, software architecture, OOP design
+- er: database relationships, entities, data models, schema design
+- state: state transitions, state machines, lifecycle diagrams (TCP, HTTP, software states)
+- math_graph: mathematical functions, statistical charts, data plots, loss curves, distributions
+- network: network topology, graph theory, computer network diagrams
+- chemical: molecular structures, chemical reactions, reaction mechanisms, synthesis pathways
+- circuit: electronic circuits, logic circuits, signal processing, amplifiers, filters
+- anatomy: biological structures, organ systems, cell diagrams, anatomical cross-sections
+- illustration: ANY scientific process diagram (DNA replication, photosynthesis, water cycle, physics experiments, geological processes, engineering systems)
 
 Respond in JSON format only:
 {

@@ -29,7 +29,7 @@ const SAMPLE_PROMPTS = [
   {
     title: 'DNA Replication Process',
     category: 'Biology',
-    prompt: 'Create a flowchart showing the process of DNA replication including helicase unwinding, primase adding RNA primers, DNA polymerase III extending, and ligase joining Okazaki fragments.',
+    prompt: 'Draw a scientific illustration of the DNA replication process showing the replication fork with helicase unwinding the double helix, primase adding RNA primers, DNA polymerase III extending the leading and lagging strands, and DNA ligase joining Okazaki fragments. Label all key enzymes and structures.',
   },
   {
     title: 'REST API Request Lifecycle',
